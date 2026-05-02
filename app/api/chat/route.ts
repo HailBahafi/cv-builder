@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export async function POST(req: NextRequest) {
@@ -37,19 +37,16 @@ Always be helpful and professional. Maintain all formatting in Markdown.`;
       { role: "user" as const, content: message },
     ];
 
-    const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 3000,
-      system: systemPrompt,
-      messages,
+    const completion = await client.responses.create({
+      model: "gpt-5.5",
+      reasoning: { effort: "low" },
+      instructions: systemPrompt,
+      input: messages,
+      max_output_tokens: 3000,
     });
 
-    const content = response.content[0];
-    if (content.type !== "text") {
-      throw new Error("Unexpected response type");
-    }
-
-    const text = content.text;
+    const text = completion.output_text;
+    if (!text) throw new Error("Empty response from model");
     let updatedCV = null;
     let updatedCoverLetter = null;
     let chatResponse = text;

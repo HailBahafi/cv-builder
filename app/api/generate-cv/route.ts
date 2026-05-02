@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export async function POST(req: NextRequest) {
@@ -49,18 +49,17 @@ ${jobDescription}
 
 Provide ONLY the formatted CV content in Markdown, nothing else.`;
 
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 3000,
-      messages: [{ role: "user", content: prompt }],
+    const response = await client.responses.create({
+      model: "gpt-5.5",
+      reasoning: { effort: "low" },
+      input: [{ role: "user", content: prompt }],
+      max_output_tokens: 3000,
     });
 
-    const content = message.content[0];
-    if (content.type !== "text") {
-      throw new Error("Unexpected response type");
-    }
+    const text = response.output_text;
+    if (!text) throw new Error("Empty response from model");
 
-    return NextResponse.json({ cv: content.text });
+    return NextResponse.json({ cv: text });
   } catch (error: unknown) {
     console.error("Generate CV error:", error);
     const message = error instanceof Error ? error.message : "Failed to generate CV";
