@@ -4,29 +4,68 @@ import { useState, useRef } from "react";
 import { ArrowLeft, Download, MessageSquare, Send, Loader2, FileText } from "lucide-react";
 import type { StepProps, ChatMessage } from "@/types";
 import ReactMarkdown from "react-markdown";
+import CVRenderer from "./CVRenderer";
 
 export default function StepPreview({ state, updateState, onBack }: StepProps) {
   const [activeTab, setActiveTab] = useState<"cv" | "cover">("cv");
   const [chatInput, setChatInput] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isChatting, setIsChatting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const cvRef = useRef<HTMLDivElement>(null);
   const coverRef = useRef<HTMLDivElement>(null);
 
   const handleDownload = async () => {
-    const html2pdf = (await import("html2pdf.js")).default;
-    const element = activeTab === "cv" ? cvRef.current : coverRef.current;
-    if (!element) return;
+    const source = activeTab === "cv" ? cvRef.current : coverRef.current;
+    if (!source) return;
+    setIsDownloading(true);
 
-    const opt = {
-      margin: 10,
-      filename: activeTab === "cv" ? "cv.pdf" : "cover-letter.pdf",
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    };
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText =
+      "position:fixed;left:-9999px;top:0;width:794px;height:1000px;border:none;";
+    document.body.appendChild(iframe);
 
-    html2pdf().set(opt).from(element).save();
+    try {
+      const doc = iframe.contentDocument!;
+      doc.open();
+      doc.write(
+        `<!DOCTYPE html><html><head><meta charset="UTF-8">` +
+        `<style>*{box-sizing:border-box;margin:0;padding:0}` +
+        `body{background:#fff;font-family:Arial,Helvetica,sans-serif;}</style>` +
+        `</head><body>${source.innerHTML}</body></html>`
+      );
+      doc.close();
+
+      await new Promise<void>((r) => setTimeout(r, 400));
+
+      const h = Math.max(doc.body.scrollHeight, 200);
+      iframe.style.height = `${h}px`;
+      await new Promise<void>((r) => setTimeout(r, 100));
+
+      const { default: html2pdf } = await import("html2pdf.js");
+      await html2pdf()
+        .set({
+          margin: [10, 15, 10, 15] as [number, number, number, number],
+          filename: activeTab === "cv" ? "cv.pdf" : "cover-letter.pdf",
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            windowWidth: 794,
+            backgroundColor: "#ffffff",
+          },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(doc.body)
+        .save();
+    } catch (err) {
+      console.error("PDF download failed:", err);
+      alert("PDF download failed. Please try again.");
+    } finally {
+      document.body.removeChild(iframe);
+      setIsDownloading(false);
+    }
   };
 
   const handleChat = async () => {
@@ -79,8 +118,8 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
         <button
           onClick={() => setActiveTab("cv")}
           className={`flex-1 py-3 rounded-xl font-medium transition-all ${activeTab === "cv"
-              ? "bg-indigo-600 text-white"
-              : "bg-white text-gray-600 border border-gray-200"
+            ? "bg-indigo-600 text-white"
+            : "bg-white text-gray-600 border border-gray-200"
             }`}
         >
           <FileText className="w-4 h-4 inline mr-2" />
@@ -89,8 +128,8 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
         <button
           onClick={() => setActiveTab("cover")}
           className={`flex-1 py-3 rounded-xl font-medium transition-all ${activeTab === "cover"
-              ? "bg-indigo-600 text-white"
-              : "bg-white text-gray-600 border border-gray-200"
+            ? "bg-indigo-600 text-white"
+            : "bg-white text-gray-600 border border-gray-200"
             }`}
         >
           <MessageSquare className="w-4 h-4 inline mr-2" />
@@ -101,13 +140,11 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Document Preview */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 min-h-[600px]">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden min-h-[600px]">
             <div ref={cvRef} className={activeTab === "cv" ? "" : "hidden"}>
-              <ReactMarkdown className="prose prose-sm max-w-none">
-                {state.generatedCV}
-              </ReactMarkdown>
+              <CVRenderer content={state.generatedCV} template={state.selectedTemplate} />
             </div>
-            <div ref={coverRef} className={activeTab === "cover" ? "" : "hidden"}>
+            <div ref={coverRef} className={`p-8 ${activeTab === "cover" ? "" : "hidden"}`}>
               <ReactMarkdown className="prose prose-sm max-w-none">
                 {state.generatedCoverLetter}
               </ReactMarkdown>
@@ -124,10 +161,14 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
             </button>
             <button
               onClick={handleDownload}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all"
+              disabled={isDownloading}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <Download className="w-5 h-5" />
-              Download as PDF
+              {isDownloading ? (
+                <><Loader2 className="w-5 h-5 animate-spin" /> Generating PDF...</>
+              ) : (
+                <><Download className="w-5 h-5" /> Download as PDF</>
+              )}
             </button>
           </div>
         </div>
@@ -149,8 +190,8 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
               <div
                 key={i}
                 className={`p-3 rounded-xl text-sm ${msg.role === "user"
-                    ? "bg-indigo-50 text-indigo-900 ml-4"
-                    : "bg-gray-100 text-gray-700 mr-4"
+                  ? "bg-indigo-50 text-indigo-900 ml-4"
+                  : "bg-gray-100 text-gray-700 mr-4"
                   }`}
               >
                 {msg.content}

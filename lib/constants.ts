@@ -10,6 +10,7 @@ export const STEPS: StepInfo[] = [
 ];
 
 export const TEMPLATES: Template[] = [
+  { id: "executive", name: "Executive Pro", tag: "classic", accent: "#1e3a5f", header: "#1e3a5f" },
   { id: "double-column", name: "Double Column", tag: "modern", accent: "#4f46e5", header: "#1a1a2e" },
   { id: "elegant", name: "Elegant", tag: "classic", accent: "#0f6e56", header: "#0f6e56" },
   { id: "modern", name: "Modern", tag: "modern", accent: "#d85a30", header: "#d85a30" },
@@ -24,7 +25,8 @@ export const TEMPLATES: Template[] = [
 export const TEMPLATE_TAGS = ["all", "modern", "classic", "creative", "compact"] as const;
 
 export const TEMPLATE_BADGES: Record<string, string> = {
-  "double-column": "Most Popular",
+  "executive": "Most Popular",
+  "double-column": "Modern",
   "elegant": "Professional",
   "modern": "Modern",
   "creative": "Unique",
