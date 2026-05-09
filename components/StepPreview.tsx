@@ -150,6 +150,7 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
                 content={state.generatedCV}
                 template={state.selectedTemplate}
                 headlineTitle={state.generatedTitle}
+                language={state.language}
               />
             </div>
             <div ref={coverRef} className={activeTab === "cover" ? "" : "hidden"}>

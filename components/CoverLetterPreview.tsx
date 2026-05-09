@@ -31,7 +31,7 @@ function coverLetterMarkdownComponents(): Components {
       <ul
         style={{
           margin: "0 0 1.15rem 0",
-          paddingLeft: "1.35rem",
+          paddingInlineStart: "1.35rem",
           listStyleType: "disc",
           fontSize: "15px",
           lineHeight: 1.72,
@@ -45,7 +45,7 @@ function coverLetterMarkdownComponents(): Components {
       <ol
         style={{
           margin: "0 0 1.15rem 0",
-          paddingLeft: "1.35rem",
+          paddingInlineStart: "1.35rem",
           fontSize: "15px",
           lineHeight: 1.72,
           color: "#334155",
@@ -107,8 +107,8 @@ function coverLetterMarkdownComponents(): Components {
       <blockquote
         style={{
           margin: "0 0 1.25rem 0",
-          paddingLeft: "1rem",
-          borderLeft: "3px solid #c7d2fe",
+          paddingInlineStart: "1rem",
+          borderInlineStart: "3px solid #c7d2fe",
           color: "#475569",
           fontSize: "15px",
           lineHeight: 1.75,
@@ -136,6 +136,7 @@ export default function CoverLetterPreview({ content, language }: CoverLetterPre
     return (
       <div
         dir={isRtl ? "rtl" : "ltr"}
+        lang={language}
         style={{
           padding: "3rem 2rem",
           textAlign: "center",
@@ -151,6 +152,7 @@ export default function CoverLetterPreview({ content, language }: CoverLetterPre
   return (
     <div
       dir={isRtl ? "rtl" : "ltr"}
+      lang={language}
       style={{
         maxWidth: "38rem",
         margin: "0 auto",
