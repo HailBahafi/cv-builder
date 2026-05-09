@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { ARABIC_CV_NAME_RULES, ARABIC_CV_PLACE_RULES } from "@/lib/cvArabicNameRules";
 import { CV_SPLIT_ROW_FORMAT_RULES } from "@/lib/cvMarkdownFormat";
 import { normalizeMarkdownHeadline } from "@/lib/extractCvTitle";
 
@@ -11,12 +12,16 @@ export async function POST(req: NextRequest) {
 
     const langInstruction =
       language === "ar"
-        ? "أجب باللغة العربية وحافظ على محتوى الـ CV بالعربية."
+        ? "أجب باللغة العربية وحافظ على محتوى الـ CV بالعربية. عند تحديث الـ CV، **سطر الاسم (#) يجب أن يبقى أو يُصحَّح بالعربية** (نسخ صوتي من الاسم اللاتيني)، لا تترك الاسم بالإنجليزية في ترويسة سيرة عربية."
         : "Respond in English and maintain the CV content in English.";
+
+    const arabicExtraBlock =
+      language === "ar" ? `\n${ARABIC_CV_NAME_RULES}\n${ARABIC_CV_PLACE_RULES}\n` : "";
 
     const systemPrompt = `You are an expert CV writing assistant. You help users refine and improve their CV and cover letter.
 
 ${langInstruction}
+${arabicExtraBlock}
 
 **Current CV:**
 ${currentCV}

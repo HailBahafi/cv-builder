@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { ARABIC_CV_NAME_RULES, ARABIC_CV_PLACE_RULES } from "@/lib/cvArabicNameRules";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -14,10 +15,13 @@ export async function POST(req: NextRequest) {
         ? "اكتب خطاب التقديم باللغة العربية الفصحى."
         : "Write the cover letter in professional English.";
 
+    const arabicExtraBlock =
+      language === "ar" ? `\n${ARABIC_CV_NAME_RULES}\n${ARABIC_CV_PLACE_RULES}\n` : "";
+
     const prompt = `You are an expert career coach. Write a compelling, personalized cover letter based on the CV and job description provided.
 
 ${langInstruction}
-
+${arabicExtraBlock}
 **CV Summary:**
 ${cvText.substring(0, 2000)}
 

@@ -11,7 +11,7 @@ export const CV_SPLIT_ROW_FORMAT_RULES = `
 <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 8px 0;font-size:11px;color:#333;"><span style="flex:1;min-width:0;text-align:left;color:#1e3a5f;">COMPANY_NAME_HERE</span><span style="flex-shrink:0;text-align:right;font-style:italic;color:#333;">LOCATION_HERE</span></div>
 
 - Then bullet points (- ) for responsibilities as usual.
-- For Arabic CVs, use the same HTML structure with Arabic text inside the spans.
+- For Arabic CVs, use the same HTML structure with Arabic text inside the spans; **LOCATION_HERE** must be Arabic (city, country, حضوري/عن بُعد/هجين) — never leave English like "Riyadh, Saudi Arabia (On-site)" in Arabic-output CVs.
 
 **Education — degree row + institution row only (required):**
 - Do **not** put language proficiency (**Lang:**, Arabic, English, etc.) in Education rows — languages belong only in the separate **## Languages** section (see below).
@@ -28,7 +28,7 @@ export const CV_SPLIT_ROW_FORMAT_RULES = `
 - Never duplicate this block inside Education HTML.
 
 **Rest of CV (Markdown):**
-- # full name (one line)
+- # full name (one line): for **Arabic-output** CVs, write the full name in **Arabic script** on this line (correct transliteration from the source Latin name, e.g. Hail Bahafi → **هايل باحفي**). Do **not** leave the \`#\` name in English when the rest of the CV is Arabic.
 - ### for job title ONLY — must be a single clean line, max 60 characters, no pipe separators (use em dash — between role and one specialty)
   Good: ### Software Developer — Full-Stack & Mobile Engineering
   Bad: ### Software Developer | Frontend & Mobile Engineering | Clean Code, Debugging, Performance Optimization

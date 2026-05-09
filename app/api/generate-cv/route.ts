@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { ARABIC_CV_NAME_RULES, ARABIC_CV_PLACE_RULES } from "@/lib/cvArabicNameRules";
 import { CV_SPLIT_ROW_FORMAT_RULES } from "@/lib/cvMarkdownFormat";
 import { normalizeMarkdownHeadline } from "@/lib/extractCvTitle";
 
@@ -22,16 +23,19 @@ export async function POST(req: NextRequest) {
 
     const langInstruction =
       language === "ar"
-        ? "اكتب الـ CV باللغة العربية الفصحى بشكل احترافي."
+        ? "اكتب الـ CV باللغة العربية الفصحى بشكل احترافي. **سطر الاسم (#) يجب أن يكون بالعربية** (نسخ صوتي صحيح من الاسم اللاتيني في المصدر، وليس الإبقاء على الحروف الإنجليزية في الترويسة)."
         : "Write the CV in professional English.";
 
     const formatRules = `${CV_SPLIT_ROW_FORMAT_RULES}
    - Use bullet points (- ) under each job for responsibilities and achievements`;
 
+    const arabicExtraBlock =
+      language === "ar" ? `\n${ARABIC_CV_NAME_RULES}\n${ARABIC_CV_PLACE_RULES}\n` : "";
+
     const tailorPrompt = `You are rewriting this candidate's CV to perfectly match a specific job description for maximum ATS score and recruiter impact.
 
 ${langInstruction}
-
+${arabicExtraBlock}
 **ORIGINAL CV:**
 ${cvText}
 
@@ -77,6 +81,8 @@ Write **EXACTLY 3 sentences** — no more, no less:
 
 ### STEP 6 — Projects and other sections
 - Reframe using job vocabulary where it matches real outcomes. Preserve all factual content.
+
+### CRITICAL RULES
 1. Never fabricate experience, skills, companies, dates, or achievements.
 2. Never change **company names** or **employment dates**.
 3. Keep **official job titles** in Experience exactly as in the original CV.
@@ -87,7 +93,7 @@ Output ONLY the complete rewritten CV in Markdown. Nothing else.`;
     const enhancePrompt = `You are an expert CV writer and career coach. Your task is to ENHANCE and IMPROVE the provided CV based on the user's instructions. Do NOT tailor it to any specific job — keep the CV general-purpose while applying the requested improvements.
 
 ${langInstruction}
-
+${arabicExtraBlock}
 **Original CV:**
 ${cvText}
 
