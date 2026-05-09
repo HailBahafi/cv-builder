@@ -6,6 +6,7 @@ import StepTemplate from "@/components/StepTemplate";
 import StepJobDesc from "@/components/StepJobDesc";
 import StepGenerate from "@/components/StepGenerate";
 import StepPreview from "@/components/StepPreview";
+import ProjectLinksRow from "@/components/ProjectLinksRow";
 import { FileText } from "lucide-react";
 import Link from "next/link";
 import type { AppState } from "@/types";
@@ -16,9 +17,11 @@ export default function CVBuilderPage() {
   const [appState, setAppState] = useState<AppState>({
     cvText: "",
     jobDescription: "",
+    mode: "tailor",
     selectedTemplate: null,
     language: DEFAULT_LANGUAGE,
     generatedCV: "",
+    generatedTitle: "",
     generatedCoverLetter: "",
   });
 
@@ -129,6 +132,12 @@ export default function CVBuilderPage() {
           )}
         </div>
       </main>
+
+      <footer className="border-t border-gray-200 bg-white py-6 mt-auto">
+        <div className="max-w-6xl mx-auto px-4 text-gray-600">
+          <ProjectLinksRow variant="light" />
+        </div>
+      </footer>
     </div>
   );
 }

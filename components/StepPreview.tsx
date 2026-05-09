@@ -3,8 +3,9 @@
 import { useState, useRef } from "react";
 import { ArrowLeft, Download, MessageSquare, Send, Loader2, FileText } from "lucide-react";
 import type { StepProps, ChatMessage } from "@/types";
-import ReactMarkdown from "react-markdown";
 import CVRenderer from "./CVRenderer";
+import CoverLetterPreview from "./CoverLetterPreview";
+import { extractTitle } from "@/lib/extractCvTitle";
 
 export default function StepPreview({ state, updateState, onBack }: StepProps) {
   const [activeTab, setActiveTab] = useState<"cv" | "cover">("cv");
@@ -19,29 +20,7 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
     const source = activeTab === "cv" ? cvRef.current : coverRef.current;
     if (!source) return;
     setIsDownloading(true);
-
-    const iframe = document.createElement("iframe");
-    iframe.style.cssText =
-      "position:fixed;left:-9999px;top:0;width:794px;height:1000px;border:none;";
-    document.body.appendChild(iframe);
-
     try {
-      const doc = iframe.contentDocument!;
-      doc.open();
-      doc.write(
-        `<!DOCTYPE html><html><head><meta charset="UTF-8">` +
-        `<style>*{box-sizing:border-box;margin:0;padding:0}` +
-        `body{background:#fff;font-family:Arial,Helvetica,sans-serif;}</style>` +
-        `</head><body>${source.innerHTML}</body></html>`
-      );
-      doc.close();
-
-      await new Promise<void>((r) => setTimeout(r, 400));
-
-      const h = Math.max(doc.body.scrollHeight, 200);
-      iframe.style.height = `${h}px`;
-      await new Promise<void>((r) => setTimeout(r, 100));
-
       const { default: html2pdf } = await import("html2pdf.js");
       await html2pdf()
         .set({
@@ -52,18 +31,36 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
             scale: 2,
             useCORS: true,
             logging: false,
-            windowWidth: 794,
             backgroundColor: "#ffffff",
+            onclone: (clonedDoc: Document) => {
+              // Strip every stylesheet (Tailwind v4 uses lab()/oklch() which html2canvas can't parse)
+              clonedDoc
+                .querySelectorAll('link[rel="stylesheet"], style')
+                .forEach((n) => n.remove());
+              // Clear CSS custom properties + classes that reference those colors
+              clonedDoc.documentElement.setAttribute("style", "color-scheme: light");
+              clonedDoc.documentElement.className = "";
+              clonedDoc.body.className = "";
+              clonedDoc.body.setAttribute(
+                "style",
+                "background:#fff;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;color:#111"
+              );
+              // Inject a minimal reset that won't use lab/oklch
+              const reset = clonedDoc.createElement("style");
+              reset.textContent =
+                "*,*::before,*::after{box-sizing:border-box}" +
+                "img{max-width:100%;height:auto}";
+              clonedDoc.head.appendChild(reset);
+            },
           },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         })
-        .from(doc.body)
+        .from(source)
         .save();
     } catch (err) {
       console.error("PDF download failed:", err);
       alert("PDF download failed. Please try again.");
     } finally {
-      document.body.removeChild(iframe);
       setIsDownloading(false);
     }
   };
@@ -98,7 +95,12 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
       setChatHistory([...newHistory, { role: "assistant", content: data.response }]);
 
       if (data.updatedCV) {
-        updateState({ generatedCV: data.updatedCV });
+        const headline =
+          extractTitle(data.updatedCV) || extractTitle(state.cvText);
+        updateState({
+          generatedCV: data.updatedCV,
+          generatedTitle: headline,
+        });
       }
       if (data.updatedCoverLetter) {
         updateState({ generatedCoverLetter: data.updatedCoverLetter });
@@ -125,16 +127,18 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
           <FileText className="w-4 h-4 inline mr-2" />
           CV
         </button>
-        <button
-          onClick={() => setActiveTab("cover")}
-          className={`flex-1 py-3 rounded-xl font-medium transition-all ${activeTab === "cover"
-            ? "bg-indigo-600 text-white"
-            : "bg-white text-gray-600 border border-gray-200"
-            }`}
-        >
-          <MessageSquare className="w-4 h-4 inline mr-2" />
-          Cover Letter
-        </button>
+        {state.mode !== "enhance" && (
+          <button
+            onClick={() => setActiveTab("cover")}
+            className={`flex-1 py-3 rounded-xl font-medium transition-all ${activeTab === "cover"
+              ? "bg-indigo-600 text-white"
+              : "bg-white text-gray-600 border border-gray-200"
+              }`}
+          >
+            <MessageSquare className="w-4 h-4 inline mr-2" />
+            Cover Letter
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -142,12 +146,17 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
         <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden min-h-[600px]">
             <div ref={cvRef} className={activeTab === "cv" ? "" : "hidden"}>
-              <CVRenderer content={state.generatedCV} template={state.selectedTemplate} />
+              <CVRenderer
+                content={state.generatedCV}
+                template={state.selectedTemplate}
+                headlineTitle={state.generatedTitle}
+              />
             </div>
-            <div ref={coverRef} className={`p-8 ${activeTab === "cover" ? "" : "hidden"}`}>
-              <ReactMarkdown className="prose prose-sm max-w-none">
-                {state.generatedCoverLetter}
-              </ReactMarkdown>
+            <div ref={coverRef} className={activeTab === "cover" ? "" : "hidden"}>
+              <CoverLetterPreview
+                content={state.generatedCoverLetter}
+                language={state.language}
+              />
             </div>
           </div>
 

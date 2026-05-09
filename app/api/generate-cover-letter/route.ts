@@ -32,12 +32,13 @@ ${jobDescription}
 5. Keep it concise: 3-4 paragraphs maximum
 6. Use professional but warm tone
 7. Format in Markdown with clear paragraphs
+8. If the job description requires **Java, Python, or C++** (or similar) and the candidate has those **only academically** (per the CV), not as primary professional stack, add **ONE** sentence in **paragraph 2 or 3** along these lines (adjust languages to match truthfully): *"My academic background in [languages] further supports my ability to work across diverse technical requirements and adapt to new language environments quickly."* Never fabricate professional experience with those languages.
 
 Provide ONLY the cover letter content, nothing else.`;
 
     const response = await client.responses.create({
       model: "gpt-5.5",
-      reasoning: { effort: "low" },
+      reasoning: { effort: "medium" },
       input: [{ role: "user", content: prompt }],
       max_output_tokens: 1500,
     });

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { CV_SPLIT_ROW_FORMAT_RULES } from "@/lib/cvMarkdownFormat";
+import { normalizeMarkdownHeadline } from "@/lib/extractCvTitle";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +30,11 @@ When the user asks to modify something:
 3. If they just ask a question, answer conversationally without any prefix
 4. You can update both by including both prefixes
 
-Always be helpful and professional. Maintain all formatting in Markdown.`;
+Whenever you output a full CV inside [CV_UPDATE], follow these layout rules exactly:
+${CV_SPLIT_ROW_FORMAT_RULES}
+For the \`###\` headline: max 60 characters, single line, no pipe characters; use format **[Role] — [One specialty]** only.
+
+Always be helpful and professional. Maintain all formatting in Markdown except where raw HTML is required above for Experience/Education rows.`;
 
     const messages = [
       ...(history || []),
@@ -51,21 +55,19 @@ Always be helpful and professional. Maintain all formatting in Markdown.`;
     let updatedCoverLetter = null;
     let chatResponse = text;
 
-    // Parse CV update
     if (text.includes("[CV_UPDATE]")) {
       const parts = text.split("[CV_UPDATE]");
       chatResponse = parts[0].trim();
       const cvPart = parts[1];
       if (cvPart.includes("[COVER_UPDATE]")) {
         const cvParts = cvPart.split("[COVER_UPDATE]");
-        updatedCV = cvParts[0].trim();
+        updatedCV = normalizeMarkdownHeadline(cvParts[0].trim());
         updatedCoverLetter = cvParts[1].trim();
       } else {
-        updatedCV = cvPart.trim();
+        updatedCV = normalizeMarkdownHeadline(cvPart.trim());
       }
     }
 
-    // Parse cover letter update (if no CV update)
     if (!text.includes("[CV_UPDATE]") && text.includes("[COVER_UPDATE]")) {
       const parts = text.split("[COVER_UPDATE]");
       chatResponse = parts[0].trim();
@@ -87,7 +89,8 @@ Always be helpful and professional. Maintain all formatting in Markdown.`;
     });
   } catch (error: unknown) {
     console.error("Chat error:", error);
-    const message = error instanceof Error ? error.message : "Failed to process chat";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const messageText =
+      error instanceof Error ? error.message : "Failed to process chat";
+    return NextResponse.json({ error: messageText }, { status: 500 });
   }
 }

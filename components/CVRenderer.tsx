@@ -2,11 +2,18 @@
 
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import type { Template } from "@/types";
+import CVHeader from "./CVHeader";
+import { renderContactHeaderChildren } from "./contactHeaderIcons";
+
+const rehypePlugins = [rehypeRaw];
 
 interface CVRendererProps {
   content: string;
   template: Template | null;
+  /** When set, replaces the ### headline in the rendered CV header (from AI). */
+  headlineTitle?: string;
 }
 
 const SIDEBAR_KEYWORDS = [
@@ -48,21 +55,50 @@ function makeComponents(accent: string): Components {
   };
 }
 
-const headerComponents: Components = {
-  h1: ({ children }) => (
-    <h1 style={{ margin: "0 0 6px 0", fontSize: "26px", fontWeight: "800", color: "#fff", lineHeight: 1.2 }}>
-      {children}
-    </h1>
-  ),
-  h2: () => null,
-  h3: ({ children }) => (
-    <h3 style={{ margin: "2px 0", fontSize: "13px", fontWeight: "400", color: "rgba(255,255,255,0.82)" }}>
-      {children}
-    </h3>
-  ),
-  p: ({ children }) => (
-    <p style={{ margin: "2px 0", fontSize: "11.5px", color: "rgba(255,255,255,0.78)" }}>{children}</p>
-  ),
+function getHeaderComponents(headlineTitle?: string): Components {
+  return {
+    h1: ({ children }) => (
+      <h1 style={{ margin: "0 0 6px 0", fontSize: "26px", fontWeight: "800", color: "#fff", lineHeight: 1.2 }}>
+        {children}
+      </h1>
+    ),
+    h2: () => null,
+    h3: ({ children }) =>
+      headlineTitle?.trim() ? (
+        <CVHeader title={headlineTitle.trim()} tone="onDark" />
+      ) : (
+        <h3 style={{ margin: "2px 0", fontSize: "13px", fontWeight: "400", color: "rgba(255,255,255,0.82)" }}>
+          {children}
+        </h3>
+      ),
+    p: ({ children }) => {
+    const iconColor = "rgba(255,255,255,0.88)";
+    const textColor = "rgba(255,255,255,0.78)";
+    const nodes = renderContactHeaderChildren(
+      children,
+      iconColor,
+      textColor,
+      "11.5px",
+      "rgba(255,255,255,0.35)",
+    );
+    return (
+      <p
+        style={{
+          margin: "2px 0",
+          fontSize: "11.5px",
+          color: textColor,
+          lineHeight: 1.6,
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          alignItems: "center",
+          rowGap: 2,
+        }}
+      >
+        {nodes.length > 0 ? nodes : children}
+      </p>
+    );
+  },
   ul: ({ children }) => <ul style={{ listStyle: "none", padding: 0, margin: "4px 0" }}>{children}</ul>,
   li: ({ children }) => (
     <li style={{ display: "inline-block", fontSize: "11px", color: "rgba(255,255,255,0.75)", marginRight: "14px" }}>
@@ -70,7 +106,8 @@ const headerComponents: Components = {
     </li>
   ),
   strong: ({ children }) => <strong style={{ color: "#fff", fontWeight: "700" }}>{children}</strong>,
-};
+  };
+}
 
 function splitContent(content: string): { header: string; body: string } {
   const idx = content.indexOf("\n## ");
@@ -94,7 +131,7 @@ function splitSections(body: string): { sidebar: string; main: string } {
   return { sidebar: sidebar.join(""), main: main.join("") };
 }
 
-export default function CVRenderer({ content, template }: CVRendererProps) {
+export default function CVRenderer({ content, template, headlineTitle }: CVRendererProps) {
   const accent = template?.accent ?? "#4f46e5";
   const headerBg = template?.header ?? "#1a1a2e";
   const isTwoCol = TWO_COL_TEMPLATES.includes(template?.id ?? "");
@@ -111,17 +148,40 @@ export default function CVRenderer({ content, template }: CVRendererProps) {
         </h1>
       ),
       h2: () => null,
-      h3: ({ children }) => (
-        <h3 style={{ margin: "2px 0 8px 0", fontSize: "15px", fontWeight: "400", color: "#333", letterSpacing: "0.01em" }}>
-          {children}
-        </h3>
-      ),
+      h3: ({ children }) =>
+        headlineTitle?.trim() ? (
+          <CVHeader title={headlineTitle.trim()} tone="onLight" />
+        ) : (
+          <h3 style={{ margin: "2px 0 8px 0", fontSize: "15px", fontWeight: "400", color: "#333", letterSpacing: "0.01em" }}>
+            {children}
+          </h3>
+        ),
       h4: ({ children }) => (
         <h4 style={{ margin: "2px 0 6px 0", fontSize: "14px", fontWeight: "400", color: "#333" }}>{children}</h4>
       ),
-      p: ({ children }) => (
-        <p style={{ margin: "2px 0", fontSize: "10.5px", color: "#555", lineHeight: 1.6 }}>{children}</p>
-      ),
+      p: ({ children }) => {
+        const iconColor = "#666666";
+        const textColor = "#555555";
+        const nodes = renderContactHeaderChildren(children, iconColor, textColor, "10.5px");
+        return (
+          <p
+            style={{
+              margin: "2px 0",
+              fontSize: "10.5px",
+              color: textColor,
+              lineHeight: 1.6,
+              textAlign: "center",
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              alignItems: "center",
+              rowGap: 2,
+            }}
+          >
+            {nodes.length > 0 ? nodes : children}
+          </p>
+        );
+      },
       ul: ({ children }) => <ul style={{ listStyle: "none", padding: 0, margin: "2px 0" }}>{children}</ul>,
       li: ({ children }) => (
         <li style={{ display: "inline", fontSize: "10.5px", color: "#555", marginRight: "8px" }}>{children}</li>
@@ -136,7 +196,18 @@ export default function CVRenderer({ content, template }: CVRendererProps) {
       ),
       h2: ({ children }) => (
         <div style={{ marginTop: "20px", marginBottom: "6px" }}>
-          <h2 style={{ margin: "0 0 4px 0", fontSize: "11px", fontWeight: "800", color: "#111", textTransform: "uppercase", letterSpacing: "0.13em" }}>
+          <h2
+            style={{
+              margin: 0,
+              paddingBottom: "10px",
+              fontSize: "11px",
+              fontWeight: "800",
+              color: "#111",
+              textTransform: "uppercase",
+              letterSpacing: "0.13em",
+              lineHeight: 1.35,
+            }}
+          >
             {children}
           </h2>
           <div style={{ height: "1px", background: "#111" }} />
@@ -167,12 +238,12 @@ export default function CVRenderer({ content, template }: CVRendererProps) {
     return (
       <div style={{ fontFamily: "Arial, Helvetica, sans-serif", background: "#fff" }}>
         <div style={{ padding: "32px 36px 16px", textAlign: "center", borderBottom: "1.5px solid #111" }}>
-          <ReactMarkdown components={execHeaderComps}>
+          <ReactMarkdown rehypePlugins={rehypePlugins} components={execHeaderComps}>
             {hasHeader ? header : content.split("\n##")[0]}
           </ReactMarkdown>
         </div>
         <div style={{ padding: "6px 36px 32px" }}>
-          <ReactMarkdown components={execBodyComps}>
+          <ReactMarkdown rehypePlugins={rehypePlugins} components={execBodyComps}>
             {hasHeader ? body : ""}
           </ReactMarkdown>
         </div>
@@ -184,7 +255,9 @@ export default function CVRenderer({ content, template }: CVRendererProps) {
   if (!hasHeader) {
     return (
       <div style={{ fontFamily: "Arial, Helvetica, sans-serif", background: "#fff", padding: "24px" }}>
-        <ReactMarkdown components={makeComponents(accent)}>{content}</ReactMarkdown>
+        <ReactMarkdown rehypePlugins={rehypePlugins} components={makeComponents(accent)}>
+          {content}
+        </ReactMarkdown>
       </div>
     );
   }
@@ -194,14 +267,20 @@ export default function CVRenderer({ content, template }: CVRendererProps) {
     return (
       <div style={{ fontFamily: "Arial, Helvetica, sans-serif", background: "#fff" }}>
         <div style={{ background: headerBg, padding: "22px 26px" }}>
-          <ReactMarkdown components={headerComponents}>{header}</ReactMarkdown>
+          <ReactMarkdown rehypePlugins={rehypePlugins} components={getHeaderComponents(headlineTitle)}>
+            {header}
+          </ReactMarkdown>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "200px 1fr" }}>
           <div style={{ background: "#f2f2f7", borderRight: `3px solid ${accent}`, padding: "16px 14px" }}>
-            <ReactMarkdown components={makeComponents(accent)}>{sidebar}</ReactMarkdown>
+            <ReactMarkdown rehypePlugins={rehypePlugins} components={makeComponents(accent)}>
+              {sidebar}
+            </ReactMarkdown>
           </div>
           <div style={{ padding: "16px 20px" }}>
-            <ReactMarkdown components={makeComponents(accent)}>{main || body}</ReactMarkdown>
+            <ReactMarkdown rehypePlugins={rehypePlugins} components={makeComponents(accent)}>
+              {main || body}
+            </ReactMarkdown>
           </div>
         </div>
       </div>
@@ -211,10 +290,14 @@ export default function CVRenderer({ content, template }: CVRendererProps) {
   return (
     <div style={{ fontFamily: "Arial, Helvetica, sans-serif", background: "#fff" }}>
       <div style={{ background: headerBg, padding: "22px 26px" }}>
-        <ReactMarkdown components={headerComponents}>{header}</ReactMarkdown>
+        <ReactMarkdown rehypePlugins={rehypePlugins} components={getHeaderComponents(headlineTitle)}>
+          {header}
+        </ReactMarkdown>
       </div>
       <div style={{ padding: "16px 24px" }}>
-        <ReactMarkdown components={makeComponents(accent)}>{body}</ReactMarkdown>
+        <ReactMarkdown rehypePlugins={rehypePlugins} components={makeComponents(accent)}>
+          {body}
+        </ReactMarkdown>
       </div>
     </div>
   );

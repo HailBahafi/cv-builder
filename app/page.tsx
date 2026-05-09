@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Sparkles, FileText, ArrowLeft } from "lucide-react";
+import ProjectLinksRow from "@/components/ProjectLinksRow";
 
 export default function HomePage() {
   return (
@@ -107,7 +108,8 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-100 py-8 text-center text-sm text-gray-400">
+      <footer className="border-t border-gray-100 py-10 text-center text-sm text-gray-500 space-y-4">
+        <ProjectLinksRow variant="light" />
         <p>CV Builder AI — Powered by Claude from Anthropic</p>
       </footer>
     </main>

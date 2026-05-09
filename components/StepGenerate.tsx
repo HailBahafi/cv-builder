@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import type { StepProps } from "@/types";
+import { extractTitle } from "@/lib/extractCvTitle";
 
 export default function StepGenerate({ state, updateState, onNext, onBack }: StepProps) {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -20,6 +21,7 @@ export default function StepGenerate({ state, updateState, onNext, onBack }: Ste
         body: JSON.stringify({
           cvText: state.cvText,
           jobDescription: state.jobDescription,
+          mode: state.mode,
           templateId: state.selectedTemplate?.id,
           language: state.language,
         }),
@@ -28,23 +30,30 @@ export default function StepGenerate({ state, updateState, onNext, onBack }: Ste
       const cvData = await cvRes.json();
       if (!cvRes.ok) throw new Error(cvData.error);
 
-      // Generate Cover Letter
-      const clRes = await fetch("/api/generate-cover-letter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cvText: state.cvText,
-          jobDescription: state.jobDescription,
-          language: state.language,
-        }),
-      });
+      // Only generate cover letter in tailor mode (requires a job description)
+      let coverLetter = "";
+      if (state.mode === "tailor") {
+        const clRes = await fetch("/api/generate-cover-letter", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cvText: state.cvText,
+            jobDescription: state.jobDescription,
+            language: state.language,
+          }),
+        });
+        const clData = await clRes.json();
+        if (!clRes.ok) throw new Error(clData.error);
+        coverLetter = clData.coverLetter;
+      }
 
-      const clData = await clRes.json();
-      if (!clRes.ok) throw new Error(clData.error);
+      const headline =
+        extractTitle(cvData.cv) || extractTitle(state.cvText);
 
       updateState({
         generatedCV: cvData.cv,
-        generatedCoverLetter: clData.coverLetter,
+        generatedTitle: headline,
+        generatedCoverLetter: coverLetter,
       });
 
       onNext?.();
@@ -61,9 +70,13 @@ export default function StepGenerate({ state, updateState, onNext, onBack }: Ste
       <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
         <Sparkles className="w-7 h-7 text-indigo-600" />
       </div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Generate Your CV</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        {state.mode === "enhance" ? "Enhance Your CV" : "Generate Your CV"}
+      </h2>
       <p className="text-gray-500 mb-8">
-        We&apos;ll use AI to optimize your CV and create a tailored cover letter
+        {state.mode === "enhance"
+          ? "We'll use AI to improve your CV based on your instructions"
+          : "We'll use AI to optimize your CV and create a tailored cover letter"}
       </p>
 
       <div className="bg-gray-50 rounded-2xl p-6 mb-8 text-left">
@@ -83,7 +96,7 @@ export default function StepGenerate({ state, updateState, onNext, onBack }: Ste
           </li>
           <li className="flex items-center gap-2">
             <span className="w-2 h-2 bg-green-500 rounded-full" />
-            Job Description: {state.jobDescription.length} characters
+            {state.mode === "enhance" ? "Improvement notes" : "Job Description"}: {state.jobDescription.length} characters
           </li>
         </ul>
       </div>
@@ -116,7 +129,7 @@ export default function StepGenerate({ state, updateState, onNext, onBack }: Ste
           ) : (
             <>
               <Sparkles className="w-5 h-5" />
-              Generate CV & Cover Letter
+              {state.mode === "enhance" ? "Enhance CV" : "Generate CV & Cover Letter"}
               <ArrowRight className="w-5 h-5" />
             </>
           )}

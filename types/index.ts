@@ -1,4 +1,5 @@
 export type Language = "ar" | "en";
+export type GenerationMode = "tailor" | "enhance";
 
 export interface Template {
   id: string;
@@ -11,9 +12,12 @@ export interface Template {
 export interface AppState {
   cvText: string;
   jobDescription: string;
+  mode: GenerationMode;
   selectedTemplate: Template | null;
   language: Language;
   generatedCV: string;
+  /** Headline from last ### in generated CV; falls back to markdown when empty. */
+  generatedTitle: string;
   generatedCoverLetter: string;
 }
 

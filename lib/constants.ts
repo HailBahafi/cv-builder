@@ -59,4 +59,16 @@ export const ALLOWED_FILE_TYPES = {
 
 export const DEFAULT_LANGUAGE = "en" as const;
 
+export interface ExternalProjectLink {
+  href: string;
+  label: string;
+}
+
+/** Related projects — opens in a new tab when clicked. */
+export const PROJECT_EXTERNAL_LINKS: ExternalProjectLink[] = [
+  { href: "https://www.coffeeclubsa.com/", label: "Hollywood Coffee Club" },
+  { href: "https://infinity.edu.sa/", label: "Infinity Education" },
+  { href: "https://algothmi.vercel.app/", label: "Algothmi" },
+];
+
 export const MIN_CV_LENGTH = 50;
