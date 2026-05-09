@@ -9,10 +9,10 @@ pnpm-lock.yaml
 out/
 dist/
 
-# Environment variables
+# Environment variables & secrets (never commit keys — use a local .env copy)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Logs
 *.log
