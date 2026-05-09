@@ -38,7 +38,7 @@ function arabicExperienceTitleRow(children: ReactNode, base: CSSProperties): Rea
   const afterStrong = nodes.slice(strongIdx + 1);
   const hasMeta = afterStrong.some((n) => {
     if (typeof n === "string") return n.replace(/\s/g, "").length > 0;
-    if (n == null || n === false) return false;
+    if (n == null || typeof n === "boolean") return false;
     return true;
   });
   if (!hasMeta) {

@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 import { ARABIC_CV_NAME_RULES, ARABIC_CV_PLACE_RULES } from "@/lib/cvArabicNameRules";
 import { CV_SPLIT_ROW_FORMAT_RULES } from "@/lib/cvMarkdownFormat";
 import { normalizeMarkdownHeadline } from "@/lib/extractCvTitle";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { getOpenAI } from "@/lib/openai";
 
 export async function POST(req: NextRequest) {
   try {
@@ -115,7 +111,7 @@ Provide ONLY the formatted improved CV content in Markdown, nothing else.`;
 
     const prompt = isEnhance ? enhancePrompt : tailorPrompt;
 
-    const response = await client.responses.create({
+    const response = await getOpenAI().responses.create({
       model: "gpt-5.5",
       reasoning: { effort: "medium" },
       input: [{ role: "user", content: prompt }],
