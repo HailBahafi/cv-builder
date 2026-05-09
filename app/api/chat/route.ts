@@ -36,6 +36,7 @@ When the user asks to modify something:
 Whenever you output a full CV inside [CV_UPDATE], follow these layout rules exactly:
 ${CV_SPLIT_ROW_FORMAT_RULES}
 For the \`###\` headline: max 60 characters, single line, no pipe characters; use format **[Role] — [One specialty]** only.
+The updated CV after [CV_UPDATE] must remain **complete**: include every section from the current CV (Skills, Languages, Education, etc.) unless the user explicitly asked to remove one — never truncate the document.
 
 Always be helpful and professional. Maintain all formatting in Markdown except where raw HTML is required above for Experience/Education rows.`;
 
@@ -49,7 +50,7 @@ Always be helpful and professional. Maintain all formatting in Markdown except w
       reasoning: { effort: "low" },
       instructions: systemPrompt,
       input: messages,
-      max_output_tokens: 3000,
+      max_output_tokens: 12000,
     });
 
     const text = completion.output_text;

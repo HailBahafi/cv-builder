@@ -144,7 +144,7 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Document Preview */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden min-h-[600px]">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-x-hidden overflow-y-auto max-h-[min(1200px,calc(100vh-10rem))] min-h-[600px]">
             <div ref={cvRef} className={activeTab === "cv" ? "" : "hidden"}>
               <CVRenderer
                 content={state.generatedCV}

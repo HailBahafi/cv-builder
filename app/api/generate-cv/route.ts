@@ -82,7 +82,8 @@ Write **EXACTLY 3 sentences** — no more, no less:
 1. Never fabricate experience, skills, companies, dates, or achievements.
 2. Never change **company names** or **employment dates**.
 3. Keep **official job titles** in Experience exactly as in the original CV.
-4. ${formatRules}
+4. **Completeness:** Output MUST include **every** section from the source CV (Summary, Experience, Education, **Skills** / **## المهارات**, **Languages**, Projects, etc.). Never omit trailing sections to save length — shorten bullets if needed, but do **not** drop Skills or Languages when they exist in the original.
+5. ${formatRules}
 
 Output ONLY the complete rewritten CV in Markdown. Nothing else.`;
 
@@ -105,7 +106,7 @@ ${jobDescription}
 4. Keep all factual content (roles, companies, dates, education) exactly as-is — only rewrite wording, structure, and emphasis
 5. Do NOT invent new experience, skills, or achievements
 6. ${formatRules}
-7. Preserve all sections from the original CV
+7. Preserve **all** sections from the original CV (including **Skills** / **## المهارات** and **Languages**) — never omit sections at the end of the document.
 
 Provide ONLY the formatted improved CV content in Markdown, nothing else.`;
 
@@ -115,7 +116,7 @@ Provide ONLY the formatted improved CV content in Markdown, nothing else.`;
       model: "gpt-5.5",
       reasoning: { effort: "medium" },
       input: [{ role: "user", content: prompt }],
-      max_output_tokens: 3000,
+      max_output_tokens: 12000,
     });
 
     const text = response.output_text;

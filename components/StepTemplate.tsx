@@ -20,6 +20,10 @@ export default function StepTemplate({ state, updateState, onNext, onBack }: Ste
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Template</h2>
         <p className="text-gray-500">All templates are ATS-compatible</p>
+        <p className="text-sm text-gray-500 max-w-lg mx-auto mt-3 leading-relaxed">
+          Templates are <strong>not</strong> locked to one page — content flows and PDF export adds pages as needed.
+          Only <strong>Compact</strong> is tuned for a tight one-page layout.
+        </p>
       </div>
 
       {/* Filter tabs */}
