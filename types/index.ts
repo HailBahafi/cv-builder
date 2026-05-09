@@ -7,7 +7,7 @@ export interface Template {
   tag: string;
   accent: string;
   header: string;
-}
+} 
 
 export interface AppState {
   cvText: string;
