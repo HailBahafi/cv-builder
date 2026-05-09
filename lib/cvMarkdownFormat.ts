@@ -7,18 +7,18 @@ export const CV_SPLIT_ROW_FORMAT_RULES = `
 - Do NOT use one-line pipes like "Title | Company - dates".
 - Immediately after each role's heading block, output these TWO raw HTML lines (copy the structure; replace text only). Use the exact \`style\` attributes so PDF export keeps layout:
 
-<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:8px 0 2px 0;font-size:11px;color:#111;"><span style="flex:1;min-width:0;text-align:left;"><strong>JOB_TITLE_HERE</strong></span><span style="flex-shrink:0;text-align:right;white-space:nowrap;font-weight:400;color:#333;">DATE_RANGE_HERE</span></div>
-<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 8px 0;font-size:11px;color:#333;"><span style="flex:1;min-width:0;text-align:left;color:#1e3a5f;">COMPANY_NAME_HERE</span><span style="flex-shrink:0;text-align:right;font-style:italic;color:#333;">LOCATION_HERE</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:8px 0 2px 0;font-size:11px;color:#111;"><span style="flex:1;min-width:0;text-align:start;"><strong>JOB_TITLE_HERE</strong></span><span style="flex-shrink:0;text-align:end;white-space:nowrap;font-weight:400;color:#333;">DATE_RANGE_HERE</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 8px 0;font-size:11px;color:#333;"><span style="flex:1;min-width:0;text-align:start;color:#1e3a5f;">COMPANY_NAME_HERE</span><span style="flex-shrink:0;text-align:end;font-style:italic;color:#333;">LOCATION_HERE</span></div>
 
 - Then bullet points (- ) for responsibilities as usual.
-- For Arabic CVs, use the same HTML structure with Arabic text inside the spans; **LOCATION_HERE** must be Arabic (city, country, حضوري/عن بُعد/هجين) — never leave English like "Riyadh, Saudi Arabia (On-site)" in Arabic-output CVs.
+- For Arabic CVs, use the same HTML structure with Arabic text inside the spans; **LOCATION_HERE** must be Arabic (city, country, حضوري/عن بُعد/هجين) — never leave English like "Riyadh, Saudi Arabia (On-site)" in Arabic-output CVs. The \`text-align:start/end\` spans follow document direction: in RTL the job title stays on the **right** and dates + company/location lines align to the **left** margin.
 
 **Education — degree row + institution row only (required):**
 - Do **not** put language proficiency (**Lang:**, Arabic, English, etc.) in Education rows — languages belong only in the separate **## Languages** section (see below).
 - For each qualification, output exactly two HTML rows then optional *Focus* line:
 
-<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:8px 0 2px 0;font-size:11px;color:#111;"><span style="flex:1;min-width:0;text-align:left;"><strong>DEGREE_OR_PROGRAM_NAME</strong></span><span style="flex-shrink:0;text-align:right;white-space:nowrap;font-weight:400;color:#333;">YEAR_OR_DATE_RANGE</span></div>
-<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 4px 0;font-size:11px;color:#333;"><span style="flex:1;min-width:0;text-align:left;color:#1e3a5f;">INSTITUTION_AND_CITY</span><span style="flex-shrink:0;text-align:right;font-weight:400;color:#333;">—</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:8px 0 2px 0;font-size:11px;color:#111;"><span style="flex:1;min-width:0;text-align:start;"><strong>DEGREE_OR_PROGRAM_NAME</strong></span><span style="flex-shrink:0;text-align:end;white-space:nowrap;font-weight:400;color:#333;">YEAR_OR_DATE_RANGE</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 4px 0;font-size:11px;color:#333;"><span style="flex:1;min-width:0;text-align:start;color:#1e3a5f;">INSTITUTION_AND_CITY</span><span style="flex-shrink:0;text-align:end;font-weight:400;color:#333;">—</span></div>
 
 - Optional next line: plain Markdown in italics for focus/honors only, e.g. *Focus: Software Engineering, Algorithms, ...*
 
@@ -35,3 +35,14 @@ export const CV_SPLIT_ROW_FORMAT_RULES = `
 - Contact: one or two lines; separate items with a middle dot (·). Icons (phone, email, location, web, LinkedIn, GitHub) are added automatically in the preview — do not use Font Awesome or external icon fonts.
 - ## section titles (Summary, Experience, Education, **Languages** as its own section, Skills, etc.)
 `;
+
+/**
+ * Legacy model output used physical left/right in flex rows; under RTL those
+ * keep titles on the wrong margin. Logical start/end fixes layout without
+ * regenerating the CV.
+ */
+export function normalizeCvInlineAlignForRtl(markdown: string): string {
+  return markdown
+    .replace(/text-align:\s*left/gi, "text-align:start")
+    .replace(/text-align:\s*right/gi, "text-align:end");
+}

@@ -1,9 +1,11 @@
 "use client";
 
+import { Children, isValidElement, type CSSProperties, type ReactElement, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import type { Language, Template } from "@/types";
+import { normalizeCvInlineAlignForRtl } from "@/lib/cvMarkdownFormat";
 import CVHeader from "./CVHeader";
 import { renderContactHeaderChildren } from "./contactHeaderIcons";
 
@@ -26,7 +28,52 @@ const SIDEBAR_KEYWORDS = [
 
 const TWO_COL_TEMPLATES = ["double-column", "high-performer", "stylish"];
 
-function makeComponents(accent: string): Components {
+/** RTL: job title at inline-start (right); dates after **Title** at inline-end (left). */
+function arabicExperienceTitleRow(children: ReactNode, base: CSSProperties): ReactElement {
+  const nodes = Children.toArray(children);
+  const strongIdx = nodes.findIndex((n) => isValidElement(n) && n.type === "strong");
+  if (strongIdx === -1) {
+    return <h3 style={base}>{children}</h3>;
+  }
+  const afterStrong = nodes.slice(strongIdx + 1);
+  const hasMeta = afterStrong.some((n) => {
+    if (typeof n === "string") return n.replace(/\s/g, "").length > 0;
+    if (n == null || n === false) return false;
+    return true;
+  });
+  if (!hasMeta) {
+    return <h3 style={base}>{children}</h3>;
+  }
+  const titleNodes = nodes.slice(0, strongIdx + 1);
+  return (
+    <h3
+      style={{
+        ...base,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "baseline",
+        gap: "8px",
+        fontWeight: 400,
+      }}
+    >
+      <span style={{ flex: 1, minWidth: 0, textAlign: "start" }}>{titleNodes}</span>
+      <span
+        style={{
+          flexShrink: 0,
+          textAlign: "end",
+          whiteSpace: "nowrap",
+          fontWeight: 400,
+          color: "#333",
+          fontSize: "11px",
+        }}
+      >
+        {afterStrong}
+      </span>
+    </h3>
+  );
+}
+
+function makeComponents(accent: string, language: Language): Components {
   return {
     h1: ({ children }) => (
       <h1 style={{ margin: "0 0 4px 0", fontSize: "20px", fontWeight: "800", color: "#111" }}>{children}</h1>
@@ -38,9 +85,17 @@ function makeComponents(accent: string): Components {
         </h2>
       </div>
     ),
-    h3: ({ children }) => (
-      <h3 style={{ margin: "8px 0 1px 0", fontSize: "12px", fontWeight: "700", color: "#111" }}>{children}</h3>
-    ),
+    h3: ({ children }) =>
+      language === "ar" ? (
+        arabicExperienceTitleRow(children, {
+          margin: "8px 0 1px 0",
+          fontSize: "12px",
+          fontWeight: 700,
+          color: "#111",
+        })
+      ) : (
+        <h3 style={{ margin: "8px 0 1px 0", fontSize: "12px", fontWeight: "700", color: "#111" }}>{children}</h3>
+      ),
     p: ({ children }) => (
       <p style={{ margin: "2px 0", fontSize: "11px", color: "#444", lineHeight: "1.5" }}>{children}</p>
     ),
@@ -140,7 +195,8 @@ export default function CVRenderer({ content, template, headlineTitle, language 
   const isRtl = language === "ar";
   const dir = isRtl ? "rtl" : "ltr";
 
-  const { header, body } = splitContent(content);
+  const rawContent = isRtl ? normalizeCvInlineAlignForRtl(content) : content;
+  const { header, body } = splitContent(rawContent);
   const hasHeader = header.trim().length > 0;
 
   // ── Executive Pro template ──────────────────────────────────────────────
@@ -217,9 +273,17 @@ export default function CVRenderer({ content, template, headlineTitle, language 
           <div style={{ height: "1px", background: "#111" }} />
         </div>
       ),
-      h3: ({ children }) => (
-        <h3 style={{ margin: "10px 0 1px 0", fontSize: "13px", fontWeight: "700", color: "#111" }}>{children}</h3>
-      ),
+      h3: ({ children }) =>
+        language === "ar" ? (
+          arabicExperienceTitleRow(children, {
+            margin: "10px 0 1px 0",
+            fontSize: "13px",
+            fontWeight: 700,
+            color: "#111",
+          })
+        ) : (
+          <h3 style={{ margin: "10px 0 1px 0", fontSize: "13px", fontWeight: "700", color: "#111" }}>{children}</h3>
+        ),
       h4: ({ children }) => (
         <h4 style={{ margin: "8px 0 1px 0", fontSize: "12.5px", fontWeight: "700", color: "#111" }}>{children}</h4>
       ),
@@ -243,7 +307,7 @@ export default function CVRenderer({ content, template, headlineTitle, language 
       <div dir={dir} lang={language} style={{ fontFamily: "Arial, Helvetica, sans-serif", background: "#fff" }}>
         <div style={{ padding: "32px 36px 16px", textAlign: "center", borderBottom: "1.5px solid #111" }}>
           <ReactMarkdown rehypePlugins={rehypePlugins} components={execHeaderComps}>
-            {hasHeader ? header : content.split("\n##")[0]}
+            {hasHeader ? header : rawContent.split("\n##")[0]}
           </ReactMarkdown>
         </div>
         <div style={{ padding: "6px 36px 32px" }}>
@@ -259,8 +323,8 @@ export default function CVRenderer({ content, template, headlineTitle, language 
   if (!hasHeader) {
     return (
       <div dir={dir} lang={language} style={{ fontFamily: "Arial, Helvetica, sans-serif", background: "#fff", padding: "24px" }}>
-        <ReactMarkdown rehypePlugins={rehypePlugins} components={makeComponents(accent)}>
-          {content}
+        <ReactMarkdown rehypePlugins={rehypePlugins} components={makeComponents(accent, language)}>
+          {rawContent}
         </ReactMarkdown>
       </div>
     );
@@ -277,12 +341,12 @@ export default function CVRenderer({ content, template, headlineTitle, language 
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "200px 1fr" }}>
           <div style={{ background: "#f2f2f7", borderInlineEnd: `3px solid ${accent}`, padding: "16px 14px" }}>
-            <ReactMarkdown rehypePlugins={rehypePlugins} components={makeComponents(accent)}>
+            <ReactMarkdown rehypePlugins={rehypePlugins} components={makeComponents(accent, language)}>
               {sidebar}
             </ReactMarkdown>
           </div>
           <div style={{ padding: "16px 20px" }}>
-            <ReactMarkdown rehypePlugins={rehypePlugins} components={makeComponents(accent)}>
+            <ReactMarkdown rehypePlugins={rehypePlugins} components={makeComponents(accent, language)}>
               {main || body}
             </ReactMarkdown>
           </div>
@@ -299,7 +363,7 @@ export default function CVRenderer({ content, template, headlineTitle, language 
         </ReactMarkdown>
       </div>
       <div style={{ padding: "16px 24px" }}>
-        <ReactMarkdown rehypePlugins={rehypePlugins} components={makeComponents(accent)}>
+        <ReactMarkdown rehypePlugins={rehypePlugins} components={makeComponents(accent, language)}>
           {body}
         </ReactMarkdown>
       </div>
