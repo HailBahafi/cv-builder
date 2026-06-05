@@ -37,9 +37,9 @@ export const TEMPLATE_BADGES: Record<string, string> = {
 
 export const PROCESS_STEPS: ProcessStep[] = [
   { step: "1", icon: "📄", title: "Upload CV", desc: "Upload your existing resume (PDF or DOCX) or start from scratch" },
-  { step: "2", icon: "🎨", title: "Choose Template", desc: "Select from 9 professional ATS-friendly designs" },
-  { step: "3", icon: "✨", title: "AI Generation", desc: "Claude optimizes content and writes cover letter automatically" },
-  { step: "4", icon: "⬇️", title: "Download", desc: "Save your CV and cover letter as PDF or DOCX" },
+  { step: "2", icon: "🎨", title: "Choose Template", desc: "Select from 10 professional ATS-friendly designs" },
+  { step: "3", icon: "✨", title: "AI Generation", desc: "AI optimizes content and writes a cover letter automatically" },
+  { step: "4", icon: "⬇️", title: "Download", desc: "Save your CV and cover letter as ATS-ready DOCX or PDF" },
 ];
 
 export const FEATURES: Feature[] = [
@@ -47,7 +47,7 @@ export const FEATURES: Feature[] = [
   { icon: "🌍", title: "Multilingual", desc: "Generate CVs in Arabic or English based on job requirements" },
   { icon: "💬", title: "Smart Chat", desc: "Talk to AI to modify any part of your CV instantly" },
   { icon: "📝", title: "Cover Letter", desc: "Generate tailored cover letters for each job automatically" },
-  { icon: "🎨", title: "9 Templates", desc: "From classic to modern, there's a design for every professional" },
+  { icon: "🎨", title: "10 Templates", desc: "From classic to modern, there's a design for every professional" },
   { icon: "⚡", title: "Lightning Fast", desc: "Get a complete CV in seconds, not hours" },
 ];
 

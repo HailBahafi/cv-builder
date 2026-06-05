@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 ${langInstruction}
 ${arabicExtraBlock}
 **CV Summary:**
-${cvText.substring(0, 2000)}
+${cvText.length > 8000 ? cvText.substring(0, 8000) : cvText}
 
 **Job Description:**
 ${jobDescription}

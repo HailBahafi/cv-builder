@@ -9,19 +9,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+    if (file.size > MAX_BYTES) {
+      return NextResponse.json(
+        { error: "File too large. Maximum size is 10 MB." },
+        { status: 400 },
+      );
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
+    const name = file.name.toLowerCase();
     let text = "";
 
-    if (file.name.endsWith(".pdf")) {
+    if (name.endsWith(".pdf")) {
       // Dynamic import to avoid build issues
       const pdfParse = (await import("pdf-parse")).default;
       const data = await pdfParse(buffer);
       text = data.text;
-    } else if (file.name.endsWith(".docx")) {
+    } else if (name.endsWith(".docx")) {
       const mammoth = await import("mammoth");
       const result = await mammoth.extractRawText({ buffer });
       text = result.value;
-    } else if (file.name.endsWith(".txt")) {
+    } else if (name.endsWith(".txt")) {
       text = buffer.toString("utf-8");
     } else {
       return NextResponse.json(

@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { ArrowLeft, Download, MessageSquare, Send, Loader2, FileText } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { ArrowLeft, Download, MessageSquare, Send, Loader2, FileText, ChevronDown, FileType, Image as ImageIcon } from "lucide-react";
+import { saveAs } from "file-saver";
 import type { StepProps, ChatMessage } from "@/types";
 import CVRenderer from "./CVRenderer";
 import CoverLetterPreview from "./CoverLetterPreview";
+import AtsScorePanel from "./AtsScorePanel";
 import { extractTitle } from "@/lib/extractCvTitle";
+import { buildCvPdfBlob, buildCoverLetterPdfBlob } from "@/lib/exportPdf";
+import { buildCvDocxBlob, buildCoverLetterDocxBlob } from "@/lib/exportDocx";
 
 export default function StepPreview({ state, updateState, onBack }: StepProps) {
   const [activeTab, setActiveTab] = useState<"cv" | "cover">("cv");
@@ -13,10 +17,62 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isChatting, setIsChatting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const cvRef = useRef<HTMLDivElement>(null);
   const coverRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const isAr = state.language === "ar";
+
+  // Close the download menu on outside click.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [menuOpen]);
+
+  const baseName = activeTab === "cv" ? "cv" : "cover-letter";
+
+  // ATS-friendly DOCX (real text, single column) — best for ATS, both languages.
+  const handleDownloadDocx = async () => {
+    setMenuOpen(false);
+    setIsDownloading(true);
+    try {
+      const blob =
+        activeTab === "cv"
+          ? await buildCvDocxBlob(state.generatedCV, state.generatedTitle, state.language)
+          : await buildCoverLetterDocxBlob(state.generatedCoverLetter, state.language);
+      saveAs(blob, `${baseName}.docx`);
+    } catch (err) {
+      console.error("DOCX export failed:", err);
+      alert("DOCX export failed. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // ATS-friendly PDF with a real text layer (Latin scripts).
+  const handleDownloadAtsPdf = async () => {
+    setMenuOpen(false);
+    setIsDownloading(true);
+    try {
+      const blob =
+        activeTab === "cv"
+          ? buildCvPdfBlob(state.generatedCV, state.generatedTitle)
+          : buildCoverLetterPdfBlob(state.generatedCoverLetter);
+      saveAs(blob, `${baseName}.pdf`);
+    } catch (err) {
+      console.error("ATS PDF export failed:", err);
+      alert("PDF export failed. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const handleDownload = async () => {
+    setMenuOpen(false);
     const source = activeTab === "cv" ? cvRef.current : coverRef.current;
     if (!source) return;
     setIsDownloading(true);
@@ -25,7 +81,7 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
       await html2pdf()
         .set({
           margin: [10, 15, 10, 15] as [number, number, number, number],
-          filename: activeTab === "cv" ? "cv.pdf" : "cover-letter.pdf",
+          filename: `${baseName}-styled.pdf`,
           image: { type: "jpeg", quality: 0.98 },
           html2canvas: {
             scale: 2,
@@ -169,21 +225,88 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
               <ArrowLeft className="w-4 h-4" />
               Back
             </button>
-            <button
-              onClick={handleDownload}
-              disabled={isDownloading}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isDownloading ? (
-                <><Loader2 className="w-5 h-5 animate-spin" /> Generating PDF...</>
-              ) : (
-                <><Download className="w-5 h-5" /> Download as PDF</>
+            <div className="relative flex-1" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen((o) => !o)}
+                disabled={isDownloading}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isDownloading ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> {isAr ? "جارٍ التنزيل..." : "Preparing..."}</>
+                ) : (
+                  <><Download className="w-5 h-5" /> {isAr ? "تنزيل" : "Download"} <ChevronDown className="w-4 h-4" /></>
+                )}
+              </button>
+
+              {menuOpen && !isDownloading && (
+                <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-20">
+                  <button
+                    onClick={handleDownloadDocx}
+                    className="w-full flex items-start gap-3 px-4 py-3 hover:bg-indigo-50 text-left transition-colors"
+                  >
+                    <FileType className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+                    <span>
+                      <span className="block text-sm font-medium text-gray-900">
+                        {isAr ? "تنزيل DOCX" : "Download DOCX"}
+                        <span className="ml-2 text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">
+                          {isAr ? "الأفضل لـ ATS" : "BEST FOR ATS"}
+                        </span>
+                      </span>
+                      <span className="block text-xs text-gray-500">
+                        {isAr ? "نص حقيقي قابل للقراءة آلياً" : "Real selectable text, parses cleanly"}
+                      </span>
+                    </span>
+                  </button>
+
+                  {!isAr && (
+                    <button
+                      onClick={handleDownloadAtsPdf}
+                      className="w-full flex items-start gap-3 px-4 py-3 hover:bg-indigo-50 text-left transition-colors border-t border-gray-100"
+                    >
+                      <FileText className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+                      <span>
+                        <span className="block text-sm font-medium text-gray-900">
+                          PDF (ATS text)
+                          <span className="ml-2 text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded">
+                            ATS
+                          </span>
+                        </span>
+                        <span className="block text-xs text-gray-500">Single column, real text layer</span>
+                      </span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleDownload}
+                    className="w-full flex items-start gap-3 px-4 py-3 hover:bg-indigo-50 text-left transition-colors border-t border-gray-100"
+                  >
+                    <ImageIcon className="w-5 h-5 text-gray-500 shrink-0 mt-0.5" aria-hidden />
+                    <span>
+                      <span className="block text-sm font-medium text-gray-900">
+                        {isAr ? "PDF بالتصميم" : "PDF (styled)"}
+                      </span>
+                      <span className="block text-xs text-gray-500">
+                        {isAr
+                          ? "مطابق للمعاينة — للعرض البشري، ليس مثالياً لـ ATS"
+                          : "Matches preview — for human eyes, not ideal for ATS"}
+                      </span>
+                    </span>
+                  </button>
+                </div>
               )}
-            </button>
+            </div>
           </div>
         </div>
 
-        {/* Chat Sidebar */}
+        {/* Sidebar: ATS score + chat */}
+        <div className="space-y-4">
+        {state.mode === "tailor" && activeTab === "cv" && state.generatedCV && (
+          <AtsScorePanel
+            cv={state.generatedCV}
+            jobDescription={state.jobDescription}
+            language={state.language}
+          />
+        )}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col h-[600px]">
           <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <MessageSquare className="w-4 h-4" />
@@ -231,6 +354,7 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
               <Send className="w-4 h-4" />
             </button>
           </div>
+        </div>
         </div>
       </div>
     </div>

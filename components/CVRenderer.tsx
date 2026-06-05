@@ -167,9 +167,13 @@ function getHeaderComponents(headlineTitle?: string): Components {
 }
 
 function splitContent(content: string): { header: string; body: string } {
-  const idx = content.indexOf("\n## ");
-  if (idx === -1) return { header: "", body: content };
-  return { header: content.slice(0, idx), body: content.slice(idx) };
+  // First line that starts with "## " (a section heading), with or without a
+  // preceding newline — the model occasionally omits the blank line.
+  const match = content.match(/(^|\n)##\s/);
+  if (!match || match.index === undefined) return { header: "", body: content };
+  // Keep the leading newline (if any) on the body so downstream splits on "\n## " still work.
+  const idx = match[0].startsWith("\n") ? match.index : match.index - 1;
+  return { header: content.slice(0, Math.max(0, idx)), body: idx < 0 ? `\n${content}` : content.slice(idx) };
 }
 
 function splitSections(body: string): { sidebar: string; main: string } {
