@@ -24,7 +24,7 @@ export function getAiProvider(): AiProvider {
   );
 }
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-flash-latest";
 
 async function generateWithGemini(opts: GenerateOptions): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
