@@ -41,7 +41,12 @@ async function generateWithGemini(opts: GenerateOptions): Promise<string> {
           role: m.role === "assistant" ? "model" : "user",
           parts: [{ text: m.content }],
         })),
-        generationConfig: { maxOutputTokens: opts.maxOutputTokens },
+        generationConfig: {
+          maxOutputTokens: opts.maxOutputTokens,
+          // Disable "thinking" — its tokens otherwise eat into maxOutputTokens and can
+          // truncate the visible answer before it's fully written.
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
     },
   );
@@ -52,9 +57,13 @@ async function generateWithGemini(opts: GenerateOptions): Promise<string> {
   }
 
   const data = await res.json();
+  const candidate = data?.candidates?.[0];
   const text =
-    data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? "";
-  if (!text) throw new Error("Empty response from Gemini");
+    candidate?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? "";
+  if (!text) {
+    const reason = candidate?.finishReason ? ` (finishReason: ${candidate.finishReason})` : "";
+    throw new Error(`Empty response from Gemini${reason}`);
+  }
   return text;
 }
 

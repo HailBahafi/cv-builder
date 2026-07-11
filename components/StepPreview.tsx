@@ -337,19 +337,24 @@ export default function StepPreview({ state, updateState, onBack }: StepProps) {
             )}
           </div>
 
-          <div className="flex gap-2">
-            <input
-              type="text"
+          <div className="flex gap-2 items-end">
+            <textarea
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleChat()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleChat();
+                }
+              }}
               placeholder="e.g., Add more skills..."
-              className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              rows={4}
+              className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm resize-y min-h-[100px] max-h-[240px] focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <button
               onClick={handleChat}
               disabled={isChatting || !chatInput.trim()}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-40"
+              className="px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-40 self-end"
             >
               <Send className="w-4 h-4" />
             </button>
