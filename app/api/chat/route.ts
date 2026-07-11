@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ARABIC_CV_NAME_RULES, ARABIC_CV_PLACE_RULES } from "@/lib/cvArabicNameRules";
 import { CV_SPLIT_ROW_FORMAT_RULES } from "@/lib/cvMarkdownFormat";
 import { normalizeMarkdownHeadline } from "@/lib/extractCvTitle";
-import { getOpenAI } from "@/lib/openai";
+import { generateChat } from "@/lib/ai";
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,16 +45,13 @@ Always be helpful and professional. Maintain all formatting in Markdown except w
       { role: "user" as const, content: message },
     ];
 
-    const completion = await getOpenAI().responses.create({
-      model: "gpt-5.5",
-      reasoning: { effort: "low" },
-      instructions: systemPrompt,
-      input: messages,
-      max_output_tokens: 12000,
+    const text = await generateChat({
+      system: systemPrompt,
+      messages,
+      maxOutputTokens: 12000,
+      reasoningEffort: "low",
     });
 
-    const text = completion.output_text;
-    if (!text) throw new Error("Empty response from model");
     let updatedCV = null;
     let updatedCoverLetter = null;
     let chatResponse = text;

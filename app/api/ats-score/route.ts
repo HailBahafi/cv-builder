@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOpenAI } from "@/lib/openai";
+import { generateText } from "@/lib/ai";
 
 interface AtsResult {
   score: number;
@@ -60,15 +60,7 @@ Analyze:
 Respond with ONLY a JSON object, no markdown, in exactly this shape:
 {"score": <int 0-100>, "matched": ["..."], "missing": ["..."], "suggestions": ["..."], "summary": "<one or two sentence overall assessment>"}`;
 
-    const response = await getOpenAI().responses.create({
-      model: "gpt-5.5",
-      reasoning: { effort: "low" },
-      input: [{ role: "user", content: prompt }],
-      max_output_tokens: 3000,
-    });
-
-    const text = response.output_text;
-    if (!text) throw new Error("Empty response from model");
+    const text = await generateText(prompt, 3000, "low");
 
     const json = extractJson(text);
     if (!json) throw new Error("Could not parse ATS analysis");

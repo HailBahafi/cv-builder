@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ARABIC_CV_NAME_RULES, ARABIC_CV_PLACE_RULES } from "@/lib/cvArabicNameRules";
-import { getOpenAI } from "@/lib/openai";
+import { generateText } from "@/lib/ai";
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,15 +36,7 @@ ${jobDescription}
 
 Provide ONLY the cover letter content, nothing else.`;
 
-    const response = await getOpenAI().responses.create({
-      model: "gpt-5.5",
-      reasoning: { effort: "medium" },
-      input: [{ role: "user", content: prompt }],
-      max_output_tokens: 1500,
-    });
-
-    const text = response.output_text;
-    if (!text) throw new Error("Empty response from model");
+    const text = await generateText(prompt, 1500, "medium");
 
     return NextResponse.json({ coverLetter: text });
   } catch (error: unknown) {
