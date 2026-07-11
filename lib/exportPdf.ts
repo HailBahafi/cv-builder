@@ -83,7 +83,7 @@ export function buildCvPdfBlob(markdown: string, headlineTitle: string | undefin
     pdf.setDrawColor(150, 150, 150);
     pdf.setLineWidth(0.2);
     pdf.line(MARGIN, y, PAGE_W - MARGIN, y);
-    y += 3.2;
+    y += 5.5;
 
     for (const block of section.blocks) {
       if (block.type === "row") {
